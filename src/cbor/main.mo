@@ -17,7 +17,15 @@ type CBORValue = {
   #Array: [CBORValue];
   #Map: {};
   #TaggedDataItem: CBORTag;
-  #Float
+  #FloatOrSimple: FloatOrSimple
+};
+
+type FloatOrSimple = {
+  Simple: Nat8,
+  HalfFloat: Nat16,
+  SingleFloat: Nat32,
+  DoubleFloat: Nat64,
+  
 };
 
 type CBORTag = {
