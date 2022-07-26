@@ -11,3 +11,5 @@ src/declarations/
 
 # Vessel package manager
 .vessel
+
+build/
