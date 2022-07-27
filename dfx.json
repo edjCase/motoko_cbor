@@ -4,7 +4,7 @@
   "canisters": {
     "cbor": {
       "type": "motoko",
-      "main": "src/main.mo"
+      "main": "src/cbor.mo"
     },
     "test": {
       "type": "motoko",
