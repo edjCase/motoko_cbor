@@ -19,33 +19,35 @@ module {
     let iterator : Iter.Iter<Nat8> = bytes.vals();
 
     public func read() : Result.Result<CborValue, CborError> {
-      switch(readInternal()) {
-        case (#ok(#majorType7(#_break))) #err(#malformed("Value cannot be 'break'"));
-        case (a) a;
-      }
+      readInternal(false);
     };
 
-    private func readInternal() : Result.Result<CborValue, CborError> {
+    private func readInternal(allowBreak: Bool) : Result.Result<CborValue, CborError> {
       let firstByte : Nat8 = switch (readByte()){
         case (null) {
           return #err(#unexpectedEndOfBytes);
         };
         case (?firstByte) firstByte;
       };
-      Debug.print(debug_show(firstByte));
       let (majorType, additionalBits) = parseMajorType(firstByte);
-      Debug.print(debug_show(majorType));
-      switch (majorType) {
+      let result = switch (majorType) {
         case (0) parseMajorType0(additionalBits);
         case (1) parseMajorType1(additionalBits);
         case (2) parseMajorType2(additionalBits);
         case (3) parseMajorType3(additionalBits);
         case (4) parseMajorType4(additionalBits);
-        // case (5) parseMajorType5(additionalBits);
+        case (5) parseMajorType5(additionalBits);
         // case (6) parseMajorType6(additionalBits);
         case (7) parseMajorType7(additionalBits);
         case _ return #err(#malformed("Invalid major type: " # Nat8.toText(majorType)));
       };
+      if(not allowBreak) {
+        return switch(result) {
+          case (#ok(#majorType7(#_break))) #err(#invalid(#unexpectedBreak));
+          case (a) a;
+        };
+      };
+      result;
     };
 
     private func parseMajorType(byte: Nat8) : (Nat8, Nat8) {
@@ -155,8 +157,8 @@ module {
           // Loop indefinitely for each array item
           let buffer = Buffer.Buffer<CborValue>(1);
           label l loop {
-            let cbor_value: CborValue = switch(readInternal()) {
-              case (#err(e)) return #err(#unexpectedEndOfBytes);
+            let cbor_value: CborValue = switch(readInternal(true)) {
+              case (#err(e)) return #err(e);
               case (#ok(v)) v;
             };
             if (cbor_value == #majorType7(#_break)){
@@ -170,8 +172,8 @@ module {
       };
       let buffer = Buffer.Buffer<CborValue>(Nat64.toNat(array_length));
       for (i in Iter.range(1, Nat64.toNat(array_length))) {
-        let cbor_value: CborValue = switch(read()) {
-          case (#err(e)) return #err(#unexpectedEndOfBytes);
+        let cbor_value: CborValue = switch(readInternal(false)) {
+          case (#err(e)) return #err(e);
           case (#ok(v)) v;
         };
         buffer.add(cbor_value);
@@ -179,9 +181,47 @@ module {
       #ok(#majorType4(buffer.toArray()));
     };
     
-    // private func parseMajorType5(additionalBits: Nat8) : Result.Result<CborValue, CborError> {
-    //   #ok(#majorType5());
-    // };
+    private func parseMajorType5(additionalBits: Nat8) : Result.Result<CborValue, CborError> {
+      let map_size: Nat64 = switch(getAdditionalBitsValue(additionalBits)) {
+        case (#ok(#num(n))) Nat64.fromNat(Nat8.toNat(n)); // Convert number to value
+        case (#ok(#bytes(b))) Binary.BigEndian.toNat64(b); // Convert bytes to value
+        case (#ok(#indef)) {
+          // Loop indefinitely for each array item
+          let buffer = Buffer.Buffer<(CborValue, CborValue)>(1);
+          label l loop {
+            let (key, value) = switch(readKeyValuePair()){
+              case (#err(#invalid(#unexpectedBreak))) break l;
+              case (#err(e)) return #err(e);
+              case (#ok(v)) v;
+            };
+            buffer.add((key, value));
+          };
+          return #ok(#majorType5(buffer.toArray()));
+        };
+        case (#err(x)) return #err(x);
+      };
+      let buffer = Buffer.Buffer<(CborValue, CborValue)>(Nat64.toNat(map_size));
+      for (i in Iter.range(1, Nat64.toNat(map_size))) {
+        let (key, value) = switch(readKeyValuePair()){
+          case (#err(e)) return #err(e);
+          case (#ok(v)) v;
+        };
+        buffer.add((key, value));
+      };
+      #ok(#majorType5(buffer.toArray()));
+    };
+
+    private func readKeyValuePair() : Result.Result<(CborValue, CborValue), CborError> {
+      let key: CborValue = switch(readInternal(false)) {
+          case (#err(e)) return #err(e);
+          case (#ok(v)) v;
+        };
+        let value: CborValue = switch(readInternal(false)) {
+          case (#err(e)) return #err(e);
+          case (#ok(v)) v;
+        };
+        #ok((key, value));
+    };
 
     // private func parseMajorType6(additionalBits: Nat8) : Result.Result<CborValue, CborError> {
     //   #ok(#majorType6());
@@ -250,7 +290,8 @@ module {
     #unexpectedEndOfBytes;
     #malformed: Text;
     #invalid: {
-      #utf8String
+      #utf8String;
+      #unexpectedBreak;
     };
   };
 
