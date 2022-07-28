@@ -223,9 +223,19 @@ module {
         #ok((key, value));
     };
 
-    // private func parseMajorType6(additionalBits: Nat8) : Result.Result<CborValue, CborError> {
-    //   #ok(#majorType6());
-    // };
+    private func parseMajorType6(additionalBits: Nat8) : Result.Result<CborValue, CborError> {
+      let tag: Nat64 = switch(getAdditionalBitsValue(additionalBits)) {
+        case (#ok(#num(n))) Nat64.fromNat(Nat8.toNat(n)); // Convert number to value
+        case (#ok(#bytes(b))) Binary.BigEndian.toNat64(b); // Convert bytes to value
+        case (#ok(#indef)) return #err(#malformed("Value 31 is not allowed for additional bits for major type 6"));
+        case (#err(x)) return #err(x);
+      };
+        let value: CborValue = switch(readInternal(false)) {
+          case (#err(e)) return #err(e);
+          case (#ok(v)) v;
+        };
+      #ok(#majorType6({tag=tag; value=value}));
+    };
 
     private func parseMajorType7(additionalBits: Nat8) : Result.Result<CborValue, CborError> {
       if(additionalBits == 0xff) {
@@ -303,7 +313,8 @@ module {
     #majorType4: [CborValue];
     #majorType5: [(CborValue, CborValue)];
     #majorType6: {
-      tag: Nat;
+      tag: Nat64;
+      value: CborValue;
     };
     #majorType7: {
       #simple: Nat8;
