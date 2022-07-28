@@ -37,7 +37,7 @@ module {
         case (3) parseMajorType3(additionalBits);
         case (4) parseMajorType4(additionalBits);
         case (5) parseMajorType5(additionalBits);
-        // case (6) parseMajorType6(additionalBits);
+        case (6) parseMajorType6(additionalBits);
         case (7) parseMajorType7(additionalBits);
         case _ return #err(#malformed("Invalid major type: " # Nat8.toText(majorType)));
       };
