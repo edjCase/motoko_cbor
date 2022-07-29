@@ -250,20 +250,29 @@ module {
             if (v <= 31) {
               return #err(#malformed("Simple value 0 to 31 is not allowed in the extra byte"));
             };
-            #integer(v); // TODO
+            #integer(v);
           };
         };
         return #ok(#majorType7(byte));
       };
       // If 25..27, then the value is a float (half, single, double)
-      let value = switch(additionalBits) {
-        case (25) Debug.trap("Not Implemented"); // TODO Half
-        case (26) Debug.trap("Not Implemented"); // TODO Single
-        case (27) Debug.trap("Not Implemented"); // TODO Double
-        case (31) #_break;
+      let byteLength = switch(additionalBits) {
+        case (25) 2; // Half, 16 bit
+        case (26) 4; // Single, 32 bit
+        case (27) 8; // Double, 64 bit
+        case (31) return #ok(#majorType7(#_break));
         case (b) return #err(#malformed("Invalid additional bits value: " # Nat8.toText(b)));
       };
-      #ok(#majorType7(value));
+      let value = switch(readBytes(byteLength)){
+        case (null) return #err(#unexpectedEndOfBytes);
+        case (?v) {
+          switch(Util.decodeFloat(v)){
+            case (null) return #err(#malformed("Invalid float value"));
+            case (?v) v;
+          }
+        };
+      };
+      #ok(#majorType7(#float(value)));
     };
 
     private func readKeyValuePair() : Result.Result<(CborValue, CborValue), CborError> {
@@ -354,9 +363,7 @@ module {
       #bool: Bool;
       #_null;
       #_undefined;
-      #halfFloat: Float;
-      #singleFloat: Float;
-      #doubleFloat: Float;
+      #float: Float;
       #_break;
     };
   };

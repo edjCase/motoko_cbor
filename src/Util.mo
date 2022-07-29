@@ -1,19 +1,45 @@
 import Nat8 "mo:base/Nat8";
 import Nat16 "mo:base/Nat16";
+import Nat64 "mo:base/Nat64";
+import Nat "mo:base/Nat";
+import Int16 "mo:base/Int16";
+import Int64 "mo:base/Int64";
+import Float "mo:base/Float";
+import Debug "mo:base/Debug";
+import Binary "./Binary";
 
 module {
-//     public func decodeFloat(bytes: [Nat8]) : Float {
-//         let (sign: Bool, exponent: , mantissa) = switch(bytes.size()) {
+    public func decodeFloat(bytes: [Nat8]) : ?Float {
+        var bits: Nat64 = Binary.BigEndian.toNat64(bytes);
+        let (exponentBitLength: Nat64, mantissaBitLength: Nat64) = switch(bytes.size()) {
+            case (2) {
+                (5: Nat64, 10: Nat64);
+            };
+            case (4) {
+                (8: Nat64, 23: Nat64);
+            };
+            case (8) {
+                (11: Nat64, 52: Nat64);
+            };
+            case (a) return null; 
+        };
+        // Bitshift to get mantissa, exponent and sign bits
+        let mantissaBits: Nat64 = bits & (Nat64.pow(2, mantissaBitLength) - 1);
+        let exponentBits: Nat64 = (bits >> mantissaBitLength) & (Nat64.pow(2, exponentBitLength) - 1);
+        let signBits: Nat64 = (bits >> (mantissaBitLength + exponentBitLength)) & 0x01;
 
-//         }
+        // Convert bits into numbers
+        let e: Int64 = Int64.pow(2, Int64.fromNat64(exponentBits) - ((Int64.fromNat64(Nat64.pow(2, exponentBitLength) / 2)) - 1));
+        let maxOffsetInverse: Float = Float.pow(2, Float.fromInt64(Int64.fromNat64(mantissaBitLength)) * -1);
+        let m: Float = 1.0 + (Float.fromInt64(Int64.fromNat64(mantissaBits)) * maxOffsetInverse);
+
+        var floatValue: Float = Float.fromInt64(e) * m;
+
+        // Make negative if sign bit is 1
+        if (signBits == 1) {
+            floatValue := Float.mul(floatValue, -1.0);
+        };
         
-// //   unsigned half = (halfp[0] << 8) + halfp[1];
-// //   unsigned exp = (half >> 10) & 0x1f;
-// //   unsigned mant = half & 0x3ff;
-// //   double val;
-// //   if (exp == 0) val = ldexp(mant, -24);
-// //   else if (exp != 31) val = ldexp(mant + 1024, exp - 25);
-// //   else val = mant == 0 ? INFINITY : NAN;
-// //   return half & 0x8000 ? -val : val;
-//     }
+        ?floatValue;
+    }
 }
