@@ -211,17 +211,6 @@ module {
       #ok(#majorType5(buffer.toArray()));
     };
 
-    private func readKeyValuePair() : Result.Result<(CborValue, CborValue), CborError> {
-      let key: CborValue = switch(readInternal(false)) {
-          case (#err(e)) return #err(e);
-          case (#ok(v)) v;
-        };
-        let value: CborValue = switch(readInternal(false)) {
-          case (#err(e)) return #err(e);
-          case (#ok(v)) v;
-        };
-        #ok((key, value));
-    };
 
     private func parseMajorType6(additionalBits: Nat8) : Result.Result<CborValue, CborError> {
       let tag: Nat64 = switch(getAdditionalBitsValue(additionalBits)) {
@@ -242,13 +231,51 @@ module {
         // ff -> break code
         return #ok(#majorType7(#_break));
       };
-      if(additionalBits <= 24) {
         // 0..24 are simple values
-      }
-      let value = switch(additionalBits) {
-        case (25) #halfFloat()
+      if (additionalBits <= 23){
+        let simple = switch(additionalBits){
+          case (20) #bool(false);
+          case (21) #bool(true);
+          case (22) #_null;
+          case (23) #_undefined;
+          case (a) #integer(a);
+        };
+        return #ok(#majorType7(simple));
       };
-      #ok(value);
+      if(additionalBits == 24) {
+        // 24 indicates that the next byte has the simple value (excluding 0..31)
+        let byte = switch(readByte()){
+          case (null) return #err(#unexpectedEndOfBytes);
+          case (?v) {
+            if (v <= 31) {
+              return #err(#malformed("Simple value 0 to 31 is not allowed in the extra byte"));
+            };
+            #integer(v); // TODO
+          };
+        };
+        return #ok(#majorType7(byte));
+      };
+      // If 25..27, then the value is a float (half, single, double)
+      let value = switch(additionalBits) {
+        case (25) Debug.trap("Not Implemented"); // TODO Half
+        case (26) Debug.trap("Not Implemented"); // TODO Single
+        case (27) Debug.trap("Not Implemented"); // TODO Double
+        case (31) #_break;
+        case (b) return #err(#malformed("Invalid additional bits value: " # Nat8.toText(b)));
+      };
+      #ok(#majorType7(value));
+    };
+
+    private func readKeyValuePair() : Result.Result<(CborValue, CborValue), CborError> {
+      let key: CborValue = switch(readInternal(false)) {
+          case (#err(e)) return #err(e);
+          case (#ok(v)) v;
+        };
+        let value: CborValue = switch(readInternal(false)) {
+          case (#err(e)) return #err(e);
+          case (#ok(v)) v;
+        };
+        #ok((key, value));
     };
 
     private func getAdditionalBitsByteValue(additionalBits: Nat8, majorType: Nat8) : Result.Result<[Nat8], CborError> {
@@ -323,17 +350,15 @@ module {
       value: CborValue;
     };
     #majorType7: {
-      #simple: {
-        #integer: Nat8;
-        #bool: Bool;
-        #null;
-        #undefined;
-      };
+      #integer: Nat8;
+      #bool: Bool;
+      #_null;
+      #_undefined;
       #halfFloat: Float;
       #singleFloat: Float;
       #doubleFloat: Float;
       #_break;
-    }
+    };
   };
 
 
