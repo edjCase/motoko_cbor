@@ -239,10 +239,16 @@ module {
 
     private func parseMajorType7(additionalBits: Nat8) : Result.Result<CborValue, CborError> {
       if(additionalBits == 0xff) {
+        // ff -> break code
         return #ok(#majorType7(#_break));
       };
-      // TODO
-      #ok(#majorType7(#_break));
+      if(additionalBits <= 24) {
+        // 0..24 are simple values
+      }
+      let value = switch(additionalBits) {
+        case (25) #halfFloat()
+      };
+      #ok(value);
     };
 
     private func getAdditionalBitsByteValue(additionalBits: Nat8, majorType: Nat8) : Result.Result<[Nat8], CborError> {
@@ -317,26 +323,18 @@ module {
       value: CborValue;
     };
     #majorType7: {
-      #simple: Nat8;
-      #halfFloat: Nat16;
-      #singleFloat: Nat32;
-      #doubleFloat: Nat64;
+      #simple: {
+        #integer: Nat8;
+        #bool: Bool;
+        #null;
+        #undefined;
+      };
+      #halfFloat: Float;
+      #singleFloat: Float;
+      #doubleFloat: Float;
       #_break;
     }
   };
-
-  public type FloatOrSimple = {
-  };
-
-  public type CBORTag = {
-    #StandardDateTimeString: Text; // 0
-    #EpochDate: {#int: Int; #float: Float}; // 1
-    #UnsignedBignum: [Nat8]; // 2
-    #NegativeBignum: [Nat8]; // 3
-    // #DecimalFraction: [];
-    // #BigFloat: [];
-    // .. TODO
-  }
 
 
   // func cbor_tree(tree : HashTree) : Blob {
