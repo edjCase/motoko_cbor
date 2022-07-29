@@ -39,25 +39,22 @@ module {
   };
 
   public func encodeMajorType0(value: Nat64) : Result.Result<[Nat8], Types.CborEncodingError> {
-    let (additionalBits: Nat8, additionalBytes: ?[Nat8]) = if (value <= 23) {
-      (Nat8.fromNat(Nat64.toNat(value)), null);
-    } else {
-      if (value <= 0xff) {
-        (24: Nat8, ?[Nat8.fromNat(Nat64.toNat(value))]); // 24 indicates 1 more byte of info
-      } else if (value <= 0xffff) {
-        (25: Nat8, ?Binary.BigEndian.fromNat16(Nat16.fromNat(Nat64.toNat(value))));// 25 indicates 2 more bytes of info
-      } else if (value <= 0xffffffff) {
-        (26: Nat8, ?Binary.BigEndian.fromNat32(Nat32.fromNat(Nat64.toNat(value)))); // 26 indicates 4 more byte of info
-      } else {
-        (27: Nat8, ?Binary.BigEndian.fromNat64(value)); // 27 indicates 8 more byte of info
-      }
-    };
-    let bytes: [Nat8] = encodeRaw(0, additionalBits, additionalBytes);
+    let bytes = encodeNatInternal(0, value);
     return #ok(bytes);
   };
 
   public func encodeMajorType1(value: Int) : Result.Result<[Nat8], Types.CborEncodingError> {
-    #ok([]);
+    let maxValue: Int = -1;
+    let minValue: Int = -0x10000000000000000;
+    Debug.print("Value: " # debug_show(value));
+    Debug.print("Min value: " # debug_show(minValue));
+    if(value > maxValue or value < minValue) {
+      return #err(#invalidValue("Major type 1 values must be between -2^64 and -1"));
+    };
+    let natValue: Nat = Int.abs(value + 1);
+    Debug.print("Nat value: " # debug_show(natValue));
+    let bytes = encodeNatInternal(1, Nat64.fromNat(natValue));
+    return #ok(bytes);
   };
 
   public func encodeMajorType2(value: [Nat8]) : Result.Result<[Nat8], Types.CborEncodingError> {
@@ -98,6 +95,23 @@ module {
       };
     }
   };
+
+  private func encodeNatInternal(majorType: Nat8, value: Nat64) : [Nat8] {
+    let (additionalBits: Nat8, additionalBytes: ?[Nat8]) = if (value <= 23) {
+      (Nat8.fromNat(Nat64.toNat(value)), null);
+    } else {
+      if (value <= 0xff) {
+        (24: Nat8, ?[Nat8.fromNat(Nat64.toNat(value))]); // 24 indicates 1 more byte of info
+      } else if (value <= 0xffff) {
+        (25: Nat8, ?Binary.BigEndian.fromNat16(Nat16.fromNat(Nat64.toNat(value))));// 25 indicates 2 more bytes of info
+      } else if (value <= 0xffffffff) {
+        (26: Nat8, ?Binary.BigEndian.fromNat32(Nat32.fromNat(Nat64.toNat(value)))); // 26 indicates 4 more byte of info
+      } else {
+        (27: Nat8, ?Binary.BigEndian.fromNat64(value)); // 27 indicates 8 more byte of info
+      }
+    };
+    encodeRaw(majorType, additionalBits, additionalBytes);
+  }
 
 };
 
