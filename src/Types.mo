@@ -21,12 +21,16 @@ module {
     };
   };
 
-  public type CborReadError = {
+  public type CborDecodingError = {
     #unexpectedEndOfBytes;
     #malformed: Text;
     #invalid: {
       #utf8String;
       #unexpectedBreak;
     };
+  };
+
+  public type CborEncodingError = {
+    #invalidValue: Text;
   };
 }

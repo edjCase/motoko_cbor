@@ -1,5 +1,7 @@
-import CborReaderTests "./CborReaderTests";
+import DecoderTests "./DecoderTests";
+import EncoderTests "./EncoderTests";
 import FloatTests "./FloatTests";
 
-CborReaderTests.run();
+DecoderTests.run();
+EncoderTests.run();
 FloatTests.run();

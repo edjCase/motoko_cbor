@@ -1,6 +1,7 @@
 import Blob "mo:base/Blob"; 
 import Types "../src/Types";
-import CborReader "../src/CborReader";
+import CborDecoder "../src/Decoder";
+import CborEncoder "../src/Encoder";
 import Debug "mo:base/Debug";
 import Result "mo:base/Result";
 import Util "../src/Util";
@@ -108,11 +109,22 @@ module {
     };
 
     func test(bytes: [Nat8], expected : Types.CborValue) {
-        let blob = Blob.fromArray(bytes);
-        let reader = CborReader.CborReader(blob);
-        let v = reader.read();
-        if(v != #ok(expected)){
-            Debug.trap("Invalid value. Expected: " # debug_show(#ok(expected)) # ", Actual: " # debug_show(v) # ", Bytes: " # debug_show(bytes));
+        let decodeResult = CborDecoder.decodeBytes(bytes);
+        let actual: Types.CborValue = trapOrReturn<Types.CborValue, Types.CborDecodingError>(decodeResult, func (e) { debug_show(e) });
+        if(actual != expected){
+            Debug.trap("Invalid value.\nExpected: " # debug_show(expected) # "\nActual: " # debug_show(actual) # "\nBytes: " # debug_show(bytes));
+        };
+        let encodeResult = CborEncoder.encode(actual);
+        let actualBytes = trapOrReturn<[Nat8], Types.CborEncodingError>(encodeResult, func (e) { debug_show(e) });
+        if(actualBytes != bytes) {
+            Debug.trap("Invalid value.\nExpected: " # debug_show(bytes) # "\nActual: " # debug_show(actualBytes) # "\nValue: " # debug_show(actual));
         };
     };
+
+    func trapOrReturn<TValue, TErr>(result: Result.Result<TValue, TErr>, show: (TErr) -> Text) : TValue {
+        switch(result){
+            case (#err(e)) Debug.trap("Error: " # show(e));
+            case (#ok(a)) a;
+        }
+    }
 }
