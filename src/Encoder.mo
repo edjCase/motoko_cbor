@@ -11,6 +11,7 @@ import Nat16 "mo:base/Nat16";
 import Nat32 "mo:base/Nat32";
 import Nat64 "mo:base/Nat64";
 import Result "mo:base/Result";
+import Array "mo:base/Array";
 import Text "mo:base/Text";
 import Util "./Util";
 import Types "./Types";
@@ -46,31 +47,71 @@ module {
   public func encodeMajorType1(value: Int) : Result.Result<[Nat8], Types.CborEncodingError> {
     let maxValue: Int = -1;
     let minValue: Int = -0x10000000000000000;
-    Debug.print("Value: " # debug_show(value));
-    Debug.print("Min value: " # debug_show(minValue));
     if(value > maxValue or value < minValue) {
       return #err(#invalidValue("Major type 1 values must be between -2^64 and -1"));
     };
+    // Convert negative number (-1 - N) to Nat (N) to store as bytes
     let natValue: Nat = Int.abs(value + 1);
-    Debug.print("Nat value: " # debug_show(natValue));
     let bytes = encodeNatInternal(1, Nat64.fromNat(natValue));
     return #ok(bytes);
   };
 
   public func encodeMajorType2(value: [Nat8]) : Result.Result<[Nat8], Types.CborEncodingError> {
-    #ok([]);
+    let byteLength: Nat64 = Nat64.fromNat(value.size());
+    let headerBytes: [Nat8] = encodeNatInternal(2, byteLength);
+    // Value is header bits + value bytes
+    // Header is major type and value byte length
+    let bytes: [Nat8] = Util.concatArrays<Nat8>(headerBytes, value);
+    #ok(bytes);
   };
 
   public func encodeMajorType3(value: Text) : Result.Result<[Nat8], Types.CborEncodingError> {
-    #ok([]);
+    let utf8Bytes: [Nat8] = Blob.toArray(Text.encodeUtf8(value));
+    let byteLength: Nat64 = Nat64.fromNat(utf8Bytes.size());
+    let headerBytes: [Nat8] = encodeNatInternal(3, byteLength);
+    // Value is header bits + utf8 encoded string bytes
+    // Header is major type and utf8 byte length
+    let bytes: [Nat8] = Util.concatArrays<Nat8>(headerBytes, utf8Bytes);
+    #ok(bytes);
   };
 
   public func encodeMajorType4(value: [Types.CborValue]) : Result.Result<[Nat8], Types.CborEncodingError> {
-    #ok([]);
+    let arrayLength: Nat64 = Nat64.fromNat(value.size());
+    let headerBytes: [Nat8] = encodeNatInternal(4, arrayLength);
+    // Value is header bits + concatenated encoded cbor values
+    // Header is major type and array length
+    let buffer = Buffer.Buffer<Nat8>(value.size() + headerBytes.size());
+    Util.appendArrayToBuffer(buffer, headerBytes);
+    for (v in Iter.fromArray(value)) {
+      let vBytes: [Nat8] = switch(encode(v)){
+        case (#err(e)) return #err(e);
+        case (#ok(b)) b;
+      };
+      Util.appendArrayToBuffer(buffer, vBytes);
+    };
+    #ok(buffer.toArray());
   };
 
   public func encodeMajorType5(value: [(Types.CborValue, Types.CborValue)]) : Result.Result<[Nat8], Types.CborEncodingError> {
-    #ok([]);
+    let arrayLength: Nat64 = Nat64.fromNat(value.size());
+    let headerBytes: [Nat8] = encodeNatInternal(5, arrayLength);
+    // Value is header bits + concatenated encoded cbor key value map pairs
+    // Header is major type and map key length
+    let buffer = Buffer.Buffer<Nat8>(value.size() * 2 + headerBytes.size());
+    Util.appendArrayToBuffer(buffer, headerBytes);
+    for ((k, v) in Iter.fromArray(value)) {
+      let kBytes: [Nat8] = switch(encode(k)){
+        case (#err(e)) return #err(e);
+        case (#ok(b)) b;
+      };
+      Util.appendArrayToBuffer(buffer, kBytes);
+      let vBytes: [Nat8] = switch(encode(v)){
+        case (#err(e)) return #err(e);
+        case (#ok(b)) b;
+      };
+      Util.appendArrayToBuffer(buffer, vBytes);
+    };
+    #ok(buffer.toArray());
   };
 
   public func encodeMajorType6(tag: Nat64, value: Types.CborValue) : Result.Result<[Nat8], Types.CborEncodingError> {
@@ -83,14 +124,13 @@ module {
 
   private func encodeRaw(majorType: Nat8, additionalBits: Nat8, additionalBytes: ?[Nat8]) : [Nat8] {
     let firstByte: Nat8 = majorType << 5 + additionalBits;
+    // Concatenate the header byte and the additional bytes (if available)
     switch(additionalBytes) {
       case (null) [firstByte];
       case (?bytes) {
         let buffer = Buffer.Buffer<Nat8>(bytes.size() + 1);
         buffer.add(firstByte);
-        let otherBuffer = Buffer.Buffer<Nat8>(bytes.size());
-        Iter.iterate(Iter.fromArray(bytes), func(x : Nat8, ix : Nat) { otherBuffer.add(x) });        
-        buffer.append(otherBuffer);
+        Util.appendArrayToBuffer(buffer, bytes);
         buffer.toArray();
       };
     }
@@ -111,7 +151,7 @@ module {
       }
     };
     encodeRaw(majorType, additionalBits, additionalBytes);
-  }
+  };
 
 };
 

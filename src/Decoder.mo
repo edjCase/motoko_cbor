@@ -65,63 +65,6 @@ module {
       result;
     };
 
-    private func parseMajorType(byte: Nat8) : (Nat8, Nat8) {
-      let majorType : Nat8 = (byte >> 5) & 0x07; // Get first 3 bits
-      let additionalBits : Nat8 = byte & 0x1F; // Get last 5 bits
-      (majorType, additionalBits); 
-    };
-
-    private func readByte() : ?Nat8 {
-      byte_position += 1;
-      return iterator.next();
-    };
-
-    private func readBytes(n : Nat) : ?[Nat8] {
-      if (n < 1) {
-        return ?[];
-      };
-      let iter: Iter.Iter<Nat> = Iter.range(1, n);
-      let buffer = Buffer.Buffer<Nat8>(n);
-      for (i in iter) {
-        let byte = switch (readByte()) {
-          case (null) return null;
-          case (?byte) byte;
-        };
-        buffer.add(byte);
-      };
-      return ?buffer.toArray();
-    };
-
-    private func readIndefBytes(chunkedMajorType: ?Nat8) : Result.Result<[Nat8], Types.CborDecodingError> {
-      let buffer = Buffer.Buffer<Nat8>(1);
-      label l loop {
-        let byte = switch (readByte()) {
-          case (null) return #err(#unexpectedEndOfBytes);
-          case (?byte) byte;
-        };
-        if (byte == 0xff) {
-          break l; // Reached end of indefinate byte sequence
-        };
-        switch(chunkedMajorType) {
-          case (null) buffer.add(byte); // byte is actual byte value
-          case (?t) {
-            // byte represents major type/additional bits of next byte chunk
-            let (majorType, additionalBits) = parseMajorType(byte);
-            if (majorType != t) {
-              return #err(#malformed("Major type " # Nat8.toText(majorType) # " expected, got " # Nat8.toText(t)));
-            };
-            
-            let bytes = switch(readBytes(Nat8.toNat(additionalBits))) {
-              case (null) return #err(#unexpectedEndOfBytes);
-              case (?v) v;
-            };
-            Iter.iterate<Nat8>(Iter.fromArray(bytes), func (b, i) { buffer.add(b); });
-          };
-        }
-      };
-      return #ok(buffer.toArray());
-    };
-
 
     private func parseMajorType0(additionalBits: Nat8) : Result.Result<Types.CborValue, Types.CborDecodingError> {
       let value = switch(getAdditionalBitsValue(additionalBits)) {
@@ -311,6 +254,64 @@ module {
         };
       };
       #ok(#majorType7(#float(value)));
+    };
+    
+
+    private func parseMajorType(byte: Nat8) : (Nat8, Nat8) {
+      let majorType : Nat8 = (byte >> 5) & 0x07; // Get first 3 bits
+      let additionalBits : Nat8 = byte & 0x1F; // Get last 5 bits
+      (majorType, additionalBits); 
+    };
+
+    private func readByte() : ?Nat8 {
+      byte_position += 1;
+      return iterator.next();
+    };
+
+    private func readBytes(n : Nat) : ?[Nat8] {
+      if (n < 1) {
+        return ?[];
+      };
+      let iter: Iter.Iter<Nat> = Iter.range(1, n);
+      let buffer = Buffer.Buffer<Nat8>(n);
+      for (i in iter) {
+        let byte = switch (readByte()) {
+          case (null) return null;
+          case (?byte) byte;
+        };
+        buffer.add(byte);
+      };
+      return ?buffer.toArray();
+    };
+
+    private func readIndefBytes(chunkedMajorType: ?Nat8) : Result.Result<[Nat8], Types.CborDecodingError> {
+      let buffer = Buffer.Buffer<Nat8>(1);
+      label l loop {
+        let byte = switch (readByte()) {
+          case (null) return #err(#unexpectedEndOfBytes);
+          case (?byte) byte;
+        };
+        if (byte == 0xff) {
+          break l; // Reached end of indefinate byte sequence
+        };
+        switch(chunkedMajorType) {
+          case (null) buffer.add(byte); // byte is actual byte value
+          case (?t) {
+            // byte represents major type/additional bits of next byte chunk
+            let (majorType, additionalBits) = parseMajorType(byte);
+            if (majorType != t) {
+              return #err(#malformed("Major type " # Nat8.toText(majorType) # " expected, got " # Nat8.toText(t)));
+            };
+            
+            let bytes = switch(readBytes(Nat8.toNat(additionalBits))) {
+              case (null) return #err(#unexpectedEndOfBytes);
+              case (?v) v;
+            };
+            Util.appendArrayToBuffer(buffer, bytes);
+          };
+        }
+      };
+      return #ok(buffer.toArray());
     };
 
     private func decodeKeyValuePair() : Result.Result<(Types.CborValue, Types.CborValue), Types.CborDecodingError> {
