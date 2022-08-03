@@ -115,7 +115,17 @@ module {
   };
 
   public func encodeMajorType6(tag: Nat64, value: Types.CborValue) : Result.Result<[Nat8], Types.CborEncodingError> {
-    #ok([]);
+    let headerBytes: [Nat8] = encodeNatInternal(6, tag);
+    // Value is header bits + concatenated encoded cbor value
+    // Header is major type and tag value
+    let buffer = Buffer.Buffer<Nat8>(2 + headerBytes.size());
+    Util.appendArrayToBuffer(buffer, headerBytes);
+    let encodedValue: [Nat8] = switch(encode(value)){
+      case (#err(e)) return #err(e);
+      case (#ok(b)) b;
+    };
+    Util.appendArrayToBuffer(buffer, encodedValue);
+    #ok(buffer.toArray());
   };
 
   public func encodeMajorType7(value: {#integer: Nat8; #bool: Bool; #_null; #_undefined; #float: Float;}) : Result.Result<[Nat8], Types.CborEncodingError> {

@@ -200,10 +200,10 @@ module {
         case (#ok(#indef)) return #err(#malformed("Value 31 is not allowed for additional bits for major type 6"));
         case (#err(x)) return #err(x);
       };
-        let value: Types.CborValue = switch(decodeInternal(false)) {
-          case (#err(e)) return #err(e);
-          case (#ok(v)) v;
-        };
+      let value: Types.CborValue = switch(decodeInternal(false)) {
+        case (#err(e)) return #err(e);
+        case (#ok(v)) v;
+      };
       #ok(#majorType6({tag=tag; value=value}));
     };
 
