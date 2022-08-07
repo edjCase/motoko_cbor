@@ -146,11 +146,13 @@ module {
         };
       };
       case (#float(f)) {
-        switch (f) {
-          case (#f16(f16)) (25: Nat8, ?f16.toBytes());
-          case (#f32(f32)) (26: Nat8, ?f32.toBytes());
-          case (#f64(f64)) (27: Nat8, ?f64.toBytes());
+        let bytes: [Nat8] = FloatX.encodeFloatX(f);
+        let n: Nat8 = switch (f.precision) {
+          case (#f16) 25;
+          case (#f32) 26;
+          case (#f64) 27;
         };
+        (n, ?bytes);
       };
     };
     let bytes: [Nat8] = encodeRaw(7, additionalBits, additionalBytes);
