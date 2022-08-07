@@ -1,3 +1,4 @@
+import FloatX "./FloatX";
 
 module {
   public type CborValue = {
@@ -16,7 +17,7 @@ module {
       #bool: Bool;
       #_null;
       #_undefined;
-      #float: Float;
+      #float: FloatX.FloatX;
       #_break;
     };
   };

@@ -1,7 +1,7 @@
 import Blob "mo:base/Blob"; 
 import Types "../src/Types";
 import Debug "mo:base/Debug";
-import Util "../src/Util";
+import FloatX "../src/FloatX";
 
 
 module {
@@ -15,7 +15,7 @@ module {
     };
 
     func testFloat(bytes: [Nat8], expected: Float) {
-        let v = Util.decodeFloat(bytes);
+        let v = FloatX.decodeFloatX(bytes);
         switch(v){
             case (null) Debug.trap("Invalid bytes for float: " # debug_show(bytes));
             case (?v){

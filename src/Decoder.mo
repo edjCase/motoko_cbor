@@ -13,6 +13,7 @@ import Result "mo:base/Result";
 import Text "mo:base/Text";
 import Types "./Types";
 import Util "./Util";
+import FloatX "./FloatX";
 
 module {
 
@@ -140,10 +141,8 @@ module {
           label l loop {
             let cbor_value: Types.CborValue = switch(decodeInternal(true)) {
               case (#err(e)) return #err(e);
+              case (#ok(#majorType7(#_break))) break l;
               case (#ok(v)) v;
-            };
-            if (cbor_value == #majorType7(#_break)){
-              break l;
             };
             buffer.add(cbor_value);
           };
@@ -247,7 +246,7 @@ module {
       let value = switch(readBytes(byteLength)){
         case (null) return #err(#unexpectedEndOfBytes);
         case (?v) {
-          switch(Util.decodeFloat(v)){
+          switch(FloatX.decodeFloatX(v)){
             case (null) return #err(#malformed("Invalid float value"));
             case (?v) v;
           }
