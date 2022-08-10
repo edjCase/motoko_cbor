@@ -6,6 +6,6 @@ dir=build
 if [[ ! -e $dir ]]; then
     mkdir -p $dir
 fi
-$(vessel bin)/moc $(vessel sources) -wasi-system-api test/Tests.mo -o $dir/test.wasm
+$(vessel bin)/moc $(vessel sources) -wasi-system-api test/Tests.mo -o $dir/Test.wasm
 
-wasmtime $dir/test.wasm
+wasmtime $dir/Test.wasm
