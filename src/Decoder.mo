@@ -1,4 +1,5 @@
-import Binary "./Binary";
+import NatX "mo:xtendedNumbers/NatX";
+import FloatX "mo:xtendedNumbers/FloatX";
 import Blob "mo:base/Blob";
 import Buffer "mo:base/Buffer";
 import Debug "mo:base/Debug";
@@ -13,7 +14,6 @@ import Result "mo:base/Result";
 import Text "mo:base/Text";
 import Types "./Types";
 import Util "./Util";
-import FloatX "./FloatX";
 
 module {
 
@@ -70,7 +70,12 @@ module {
     private func parseMajorType0(additionalBits: Nat8) : Result.Result<Types.CborValue, Types.CborDecodingError> {
       let value = switch(getAdditionalBitsValue(additionalBits)) {
         case (#ok(#num(n))) Nat64.fromNat(Nat8.toNat(n)); // Convert number to value
-        case (#ok(#bytes(b))) Binary.BigEndian.toNat64(b); // Convert bytes to value
+        case (#ok(#bytes(b))) {
+          switch (decodeAdditionalBytes(b)) {
+            case (#err(e)) return #err(e);
+            case (#ok(v)) v;
+          };
+        };
         case (#ok(#indef)) return #err(#malformed("Major type 0 does not support 31 for additional bits"));
         case (#err(x)) return #err(x);
       };
@@ -80,7 +85,12 @@ module {
     private func parseMajorType1(additionalBits: Nat8) : Result.Result<Types.CborValue, Types.CborDecodingError> {
       let value: Nat64 = switch(getAdditionalBitsValue(additionalBits)) {
         case (#ok(#num(n))) Nat64.fromNat(Nat8.toNat(n)); // Convert number to value
-        case (#ok(#bytes(b))) Binary.BigEndian.toNat64(b); // Convert bytes to value
+        case (#ok(#bytes(b))) {
+          switch (decodeAdditionalBytes(b)) {
+            case (#err(e)) return #err(e);
+            case (#ok(v)) v;
+          };
+        };
         case (#ok(#indef)) return #err(#malformed("Major type 1 does not support 31 for additional bits"));
         case (#err(x)) return #err(x);
       };
@@ -134,7 +144,12 @@ module {
     private func parseMajorType4(additionalBits: Nat8) : Result.Result<Types.CborValue, Types.CborDecodingError> {
       let array_length: Nat64 = switch(getAdditionalBitsValue(additionalBits)) {
         case (#ok(#num(n))) Nat64.fromNat(Nat8.toNat(n)); // Convert number to value
-        case (#ok(#bytes(b))) Binary.BigEndian.toNat64(b); // Convert bytes to value
+        case (#ok(#bytes(b))) {
+          switch (decodeAdditionalBytes(b)) {
+            case (#err(e)) return #err(e);
+            case (#ok(v)) v;
+          };
+        };
         case (#ok(#indef)) {
           // Loop indefinitely for each array item
           let buffer = Buffer.Buffer<Types.CborValue>(1);
@@ -164,7 +179,12 @@ module {
     private func parseMajorType5(additionalBits: Nat8) : Result.Result<Types.CborValue, Types.CborDecodingError> {
       let map_size: Nat64 = switch(getAdditionalBitsValue(additionalBits)) {
         case (#ok(#num(n))) Nat64.fromNat(Nat8.toNat(n)); // Convert number to value
-        case (#ok(#bytes(b))) Binary.BigEndian.toNat64(b); // Convert bytes to value
+        case (#ok(#bytes(b))) {
+          switch (decodeAdditionalBytes(b)) {
+            case (#err(e)) return #err(e);
+            case (#ok(v)) v;
+          };
+        };
         case (#ok(#indef)) {
           // Loop indefinitely for each array item
           let buffer = Buffer.Buffer<(Types.CborValue, Types.CborValue)>(1);
@@ -195,7 +215,12 @@ module {
     private func parseMajorType6(additionalBits: Nat8) : Result.Result<Types.CborValue, Types.CborDecodingError> {
       let tag: Nat64 = switch(getAdditionalBitsValue(additionalBits)) {
         case (#ok(#num(n))) Nat64.fromNat(Nat8.toNat(n)); // Convert number to value
-        case (#ok(#bytes(b))) Binary.BigEndian.toNat64(b); // Convert bytes to value
+        case (#ok(#bytes(b))) {
+          switch (decodeAdditionalBytes(b)) {
+            case (#err(e)) return #err(e);
+            case (#ok(v)) v;
+          };
+        };
         case (#ok(#indef)) return #err(#malformed("Value 31 is not allowed for additional bits for major type 6"));
         case (#err(x)) return #err(x);
       };
@@ -236,17 +261,17 @@ module {
         return #ok(#majorType7(byte));
       };
       // If 25..27, then the value is a float (half, single, double)
-      let byteLength = switch(additionalBits) {
-        case (25) 2; // Half, 16 bit
-        case (26) 4; // Single, 32 bit
-        case (27) 8; // Double, 64 bit
+      let (byteLength, precision) = switch(additionalBits) {
+        case (25) (2, #f16); // Half, 16 bit
+        case (26) (4, #f32); // Single, 32 bit
+        case (27) (8, #f64); // Double, 64 bit
         case (31) return #ok(#majorType7(#_break));
         case (b) return #err(#malformed("Invalid additional bits value: " # Nat8.toText(b)));
       };
       let value = switch(readBytes(byteLength)){
         case (null) return #err(#unexpectedEndOfBytes);
         case (?v) {
-          switch(FloatX.decodeFloatX(v)){
+          switch(FloatX.decodeFloatX(v, precision, #msb)){
             case (null) return #err(#malformed("Invalid float value"));
             case (?v) v;
           }
@@ -325,10 +350,32 @@ module {
         #ok((key, value));
     };
 
+    private func decodeAdditionalBytes(bytes: [Nat8]) : Result.Result<Nat64, Types.CborDecodingError> {
+      let iter = Iter.fromArray(bytes);
+      // Convert bytes to value
+      Debug.print(debug_show(bytes));
+      let result: ?Nat64 = switch (bytes.size()) {
+        case (1) do ? { NatX.from8To64(NatX.decodeNat8(iter, #msb)!) };
+        case (2) do ? { NatX.from16To64(NatX.decodeNat16(iter, #msb)!) };
+        case (4) do ? { NatX.from32To64(NatX.decodeNat32(iter, #msb)!) };
+        case (8) NatX.decodeNat64(iter, #msb);
+        case (_) return #err(#invalid(#nat64(bytes))); // TODO error type
+      };
+      switch(result) {
+        case (null) #err(#invalid(#nat64(bytes))); // TODO error type
+        case (?v) #ok(v);
+      };
+    };
+
     private func getAdditionalBitsByteValue(additionalBits: Nat8, majorType: Nat8) : Result.Result<[Nat8], Types.CborDecodingError> {
       let bytes_to_read : Nat = switch(getAdditionalBitsValue(additionalBits)) {
         case (#ok(#num(n))) Nat8.toNat(n); // Convert number to length
-        case (#ok(#bytes(b))) Nat64.toNat(Binary.BigEndian.toNat64(b)); // Convert bytes to length
+        case (#ok(#bytes(b))) {
+          switch (decodeAdditionalBytes(b)) {
+            case (#err(e)) return #err(e);
+            case (#ok(v)) Nat64.toNat(v);
+          };
+        };
         case (#ok(#indef)) {
           // Read indefinite length of bytes
           let indef_bytes = switch(readIndefBytes(?majorType)) {

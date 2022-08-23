@@ -2,9 +2,9 @@
   "version": 1,
   "dfx": "0.11.0",
   "canisters": {
-    "cbor": {
+    "sample": {
       "type": "motoko",
-      "main": "src/cbor.mo"
+      "main": "samples/Main.mo"
     },
     "test": {
       "type": "motoko",

@@ -1,4 +1,5 @@
-import Binary "./Binary";
+import NatX "mo:xtendedNumbers/NatX";
+import FloatX "mo:xtendedNumbers/FloatX";
 import Blob "mo:base/Blob";
 import Buffer "mo:base/Buffer";
 import Debug "mo:base/Debug";
@@ -15,7 +16,6 @@ import Array "mo:base/Array";
 import Text "mo:base/Text";
 import Util "./Util";
 import Types "./Types";
-import FloatX "./FloatX";
 
 module {
   public func encode(value: Types.CborValue) : Result.Result<[Nat8], Types.CborEncodingError> {
@@ -146,13 +146,14 @@ module {
         };
       };
       case (#float(f)) {
-        let bytes: [Nat8] = FloatX.encodeFloatX(f);
+        let floatBytesBuffer = Buffer.Buffer<Nat8>(8);
+        FloatX.encodeFloatX(floatBytesBuffer, f, #msb);
         let n: Nat8 = switch (f.precision) {
           case (#f16) 25;
           case (#f32) 26;
           case (#f64) 27;
         };
-        (n, ?bytes);
+        (n, ?floatBytesBuffer.toArray());
       };
     };
     let bytes: [Nat8] = encodeRaw(7, additionalBits, additionalBytes);
@@ -177,15 +178,21 @@ module {
     let (additionalBits: Nat8, additionalBytes: ?[Nat8]) = if (value <= 23) {
       (Nat8.fromNat(Nat64.toNat(value)), null);
     } else {
-      if (value <= 0xff) {
-        (24: Nat8, ?[Nat8.fromNat(Nat64.toNat(value))]); // 24 indicates 1 more byte of info
+      let buffer = Buffer.Buffer<Nat8>(8);
+      let additionalBits: Nat8 = if (value <= 0xff) {
+        buffer.add(Nat8.fromNat(Nat64.toNat(value)));
+        24
       } else if (value <= 0xffff) {
-        (25: Nat8, ?Binary.BigEndian.fromNat16(Nat16.fromNat(Nat64.toNat(value))));// 25 indicates 2 more bytes of info
+        NatX.encodeNat16(buffer, Nat16.fromNat(Nat64.toNat(value)), #msb);
+        25 // 25 indicates 2 more bytes of info
       } else if (value <= 0xffffffff) {
-        (26: Nat8, ?Binary.BigEndian.fromNat32(Nat32.fromNat(Nat64.toNat(value)))); // 26 indicates 4 more byte of info
+        NatX.encodeNat32(buffer, Nat32.fromNat(Nat64.toNat(value)), #msb);
+        26 // 26 indicates 4 more bytes of info
       } else {
-        (27: Nat8, ?Binary.BigEndian.fromNat64(value)); // 27 indicates 8 more byte of info
-      }
+        NatX.encodeNat64(buffer, value, #msb);
+        27 // 27 indicates 8 more bytes of info
+      };
+      (additionalBits, ?buffer.toArray());
     };
     encodeRaw(majorType, additionalBits, additionalBytes);
   };

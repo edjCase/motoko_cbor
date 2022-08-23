@@ -8,7 +8,6 @@ import Float "mo:base/Float";
 import Debug "mo:base/Debug";
 import Buffer "mo:base/Buffer";
 import Iter "mo:base/Iter";
-import Binary "./Binary";
 
 module {
 

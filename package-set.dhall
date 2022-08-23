@@ -11,6 +11,12 @@ let
          , version = "v0.0.1"
          , repo = "https://github.com/gekctek/motoko_candid"
          , dependencies = [] : List Text
+      },
+      {
+         name = "xtendedNumbers"
+         , version = "v0.0.1"
+         , repo = "https://github.com/gekctek/motoko_numbers"
+         , dependencies = [] : List Text
       }
     ] : List Package
 

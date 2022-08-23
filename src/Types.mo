@@ -1,4 +1,4 @@
-import FloatX "./FloatX";
+import FloatX "mo:xtendedNumbers/FloatX";
 
 module {
   public type CborValue = {
@@ -26,6 +26,7 @@ module {
     #unexpectedEndOfBytes;
     #malformed: Text;
     #invalid: {
+      #nat64: [Nat8];
       #utf8String;
       #unexpectedBreak;
     };

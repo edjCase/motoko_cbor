@@ -8,7 +8,7 @@ import Array "mo:base/Array";
 import Nat8 "mo:base/Nat8";
 import Char "mo:base/Char";
 import Util "../src/Util";
-import FloatX "../src/FloatX";
+import FloatX "mo:xtendedNumbers/FloatX";
 
 
 module {
