@@ -4,11 +4,11 @@
   "canisters": {
     "sample": {
       "type": "motoko",
-      "main": "samples/Main.mo"
+      "main": "samples/raw_call/Main.mo"
     },
     "test": {
       "type": "motoko",
-      "main": "test/test.mo"
+      "main": "test/Tests.mo"
     }
   },
   "defaults": {

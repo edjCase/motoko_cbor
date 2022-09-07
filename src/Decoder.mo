@@ -353,7 +353,6 @@ module {
     private func decodeAdditionalBytes(bytes: [Nat8]) : Result.Result<Nat64, Types.CborDecodingError> {
       let iter = Iter.fromArray(bytes);
       // Convert bytes to value
-      Debug.print(debug_show(bytes));
       let result: ?Nat64 = switch (bytes.size()) {
         case (1) do ? { NatX.from8To64(NatX.decodeNat8(iter, #msb)!) };
         case (2) do ? { NatX.from16To64(NatX.decodeNat16(iter, #msb)!) };
