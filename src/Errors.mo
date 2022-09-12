@@ -3,12 +3,8 @@ import FloatX "mo:xtendedNumbers/FloatX";
 module {
   public type DecodingError = {
     #unexpectedEndOfBytes;
-    #malformed: Text;
-    #invalid: {
-      #nat64: [Nat8];
-      #utf8String;
-      #unexpectedBreak;
-    };
+    #unexpectedBreak;
+    #invalid: Text;
   };
 
   public type EncodingError = {

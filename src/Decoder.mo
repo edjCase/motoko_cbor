@@ -22,10 +22,6 @@ module {
     decode(blob.vals());
   };
 
-  public func decodeBytes(bytes: [Nat8]) : Result.Result<Value.Value, Errors.DecodingError> {
-    decode(Iter.fromArray(bytes));
-  };
-
   public func decode(bytes: Iter.Iter<Nat8>) : Result.Result<Value.Value, Errors.DecodingError> {
     let decoder = CborDecoder(bytes);
     decoder.decode();
@@ -56,11 +52,11 @@ module {
         case (5) parseMajorType5(additionalBits);
         case (6) parseMajorType6(additionalBits);
         case (7) parseMajorType7(additionalBits);
-        case _ return #err(#malformed("Invalid major type: " # Nat8.toText(majorType)));
+        case _ return #err(#invalid("Invalid major type: " # Nat8.toText(majorType)));
       };
       if(not allowBreak) {
         return switch(result) {
-          case (#ok(#majorType7(#_break))) #err(#invalid(#unexpectedBreak));
+          case (#ok(#majorType7(#_break))) #err(#unexpectedBreak);
           case (a) a;
         };
       };
@@ -77,7 +73,7 @@ module {
             case (#ok(v)) v;
           };
         };
-        case (#ok(#indef)) return #err(#malformed("Major type 0 does not support 31 for additional bits"));
+        case (#ok(#indef)) return #err(#invalid("Major type 0 does not support 31 for additional bits"));
         case (#err(x)) return #err(x);
       };
       #ok(#majorType0(value));
@@ -92,7 +88,7 @@ module {
             case (#ok(v)) v;
           };
         };
-        case (#ok(#indef)) return #err(#malformed("Major type 1 does not support 31 for additional bits"));
+        case (#ok(#indef)) return #err(#invalid("Major type 1 does not support 31 for additional bits"));
         case (#err(x)) return #err(x);
       };
       
@@ -139,7 +135,7 @@ module {
       };
       let blob = Blob.fromArray(byte_value);
       let text_value: Text = switch(Text.decodeUtf8(blob)){
-        case (null) return #err(#invalid(#utf8String));
+        case (null) return #err(#invalid("Invalid UTF8 String: " # debug_show(blob)));
         case (?v) v;
       };
       #ok(#majorType3(text_value));
@@ -194,7 +190,7 @@ module {
           let buffer = Buffer.Buffer<(Value.Value, Value.Value)>(1);
           label l loop {
             let (key, value) = switch(decodeKeyValuePair()){
-              case (#err(#invalid(#unexpectedBreak))) break l;
+              case (#err(#unexpectedBreak)) break l;
               case (#err(e)) return #err(e);
               case (#ok(v)) v;
             };
@@ -225,7 +221,7 @@ module {
             case (#ok(v)) v;
           };
         };
-        case (#ok(#indef)) return #err(#malformed("Value 31 is not allowed for additional bits for major type 6"));
+        case (#ok(#indef)) return #err(#invalid("Value 31 is not allowed for additional bits for major type 6"));
         case (#err(x)) return #err(x);
       };
       let value: Value.Value = switch(decodeInternal(false)) {
@@ -257,7 +253,7 @@ module {
           case (null) return #err(#unexpectedEndOfBytes);
           case (?v) {
             if (v <= 31) {
-              return #err(#malformed("Simple value 0 to 31 is not allowed in the extra byte"));
+              return #err(#invalid("Simple value 0 to 31 is not allowed in the extra byte"));
             };
             #integer(v);
           };
@@ -270,13 +266,13 @@ module {
         case (26) (4, #f32); // Single, 32 bit
         case (27) (8, #f64); // Double, 64 bit
         case (31) return #ok(#majorType7(#_break));
-        case (b) return #err(#malformed("Invalid additional bits value: " # Nat8.toText(b)));
+        case (b) return #err(#invalid("Invalid additional bits value: " # Nat8.toText(b)));
       };
       let value = switch(readBytes(byteLength)){
         case (null) return #err(#unexpectedEndOfBytes);
         case (?v) {
           switch(FloatX.decodeFloatX(Iter.fromArray(v), precision, #msb)){
-            case (null) return #err(#malformed("Invalid float value"));
+            case (null) return #err(#invalid("Invalid float value"));
             case (?v) v;
           }
         };
@@ -328,7 +324,7 @@ module {
             // byte represents major type/additional bits of next byte chunk
             let (majorType, additionalBits) = parseMajorType(byte);
             if (majorType != t) {
-              return #err(#malformed("Major type " # Nat8.toText(majorType) # " expected, got " # Nat8.toText(t)));
+              return #err(#invalid("Major type " # Nat8.toText(majorType) # " expected, got " # Nat8.toText(t)));
             };
             
             let bytes = switch(readBytes(Nat8.toNat(additionalBits))) {
@@ -362,10 +358,10 @@ module {
         case (2) do ? { NatX.from16To64(NatX.decodeNat16(iter, #msb)!) };
         case (4) do ? { NatX.from32To64(NatX.decodeNat32(iter, #msb)!) };
         case (8) NatX.decodeNat64(iter, #msb);
-        case (_) return #err(#invalid(#nat64(bytes))); // TODO error type
+        case (s) return #err(#invalid("Invalid additional bytes size: " # Nat.toText(s)));
       };
       switch(result) {
-        case (null) #err(#invalid(#nat64(bytes))); // TODO error type
+        case (null) #err(#unexpectedEndOfBytes);
         case (?v) #ok(v);
       };
     };
@@ -415,7 +411,7 @@ module {
         case (31) return #ok(#indef);
         case a {
           let message = "Invalid additional bits value: " # Nat8.toText(additionalBits);
-          return #err(#malformed(message));
+          return #err(#invalid(message));
         };
       };
       let value_bytes: [Nat8] = switch (readBytes(content_byte_length)){
