@@ -1,5 +1,6 @@
 import Blob "mo:base/Blob"; 
-import Types "../src/Types";
+import Value "../src/Value";
+import Errors "../src/Errors";
 import CborDecoder "../src/Decoder";
 import CborEncoder "../src/Encoder";
 import Debug "mo:base/Debug";
@@ -119,14 +120,14 @@ module {
         // test([0xf8, 0x18], #majorType7(#integer(24)), null);
     };
 
-    func test(bytes: [Nat8], expected : Types.CborValue, reverseValue: ?[Nat8]) {
+    func test(bytes: [Nat8], expected : Value.Value, reverseValue: ?[Nat8]) {
         let decodeResult = CborDecoder.decodeBytes(bytes);
-        let actual: Types.CborValue = trapOrReturn<Types.CborValue, Types.CborDecodingError>(decodeResult, func (e) { debug_show(e) });
+        let actual: Value.Value = trapOrReturn<Value.Value, Errors.DecodingError>(decodeResult, func (e) { debug_show(e) });
         if(actual != expected){
             Debug.trap("Invalid value.\nExpected: " # debug_show(expected) # "\nActual: " # debug_show(actual) # "\nBytes: " # toHexString(bytes));
         };
         let encodeResult = CborEncoder.encode(actual);
-        let actualBytes = trapOrReturn<[Nat8], Types.CborEncodingError>(encodeResult, func (e) { debug_show(e) });
+        let actualBytes = trapOrReturn<[Nat8], Errors.EncodingError>(encodeResult, func (e) { debug_show(e) });
         let comparisonValue: [Nat8] = switch (reverseValue) {
             case (null) bytes;
             case (?v) v;

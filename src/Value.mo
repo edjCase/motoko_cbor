@@ -1,16 +1,16 @@
 import FloatX "mo:xtendedNumbers/FloatX";
 
 module {
-  public type CborValue = {
+  public type Value = {
     #majorType0: Nat64; // 0 -> 2^64 - 1
     #majorType1: Int; // -2^64 -> -1 ((-1 * Value) - 1)
     #majorType2 : [Nat8];
     #majorType3: Text;
-    #majorType4: [CborValue];
-    #majorType5: [(CborValue, CborValue)];
+    #majorType4: [Value];
+    #majorType5: [(Value, Value)];
     #majorType6: {
       tag: Nat64;
-      value: CborValue;
+      value: Value;
     };
     #majorType7: {
       #integer: Nat8;
@@ -20,19 +20,5 @@ module {
       #float: FloatX.FloatX;
       #_break;
     };
-  };
-
-  public type CborDecodingError = {
-    #unexpectedEndOfBytes;
-    #malformed: Text;
-    #invalid: {
-      #nat64: [Nat8];
-      #utf8String;
-      #unexpectedBreak;
-    };
-  };
-
-  public type CborEncodingError = {
-    #invalidValue: Text;
   };
 }

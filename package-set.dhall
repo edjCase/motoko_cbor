@@ -14,7 +14,7 @@ let
       },
       {
          name = "xtendedNumbers"
-         , version = "v0.0.2"
+         , version = "v0.0.3"
          , repo = "https://github.com/gekctek/motoko_numbers"
          , dependencies = [] : List Text
       }

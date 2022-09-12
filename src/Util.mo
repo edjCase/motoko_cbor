@@ -10,14 +10,6 @@ import Buffer "mo:base/Buffer";
 import Iter "mo:base/Iter";
 
 module {
-
-    public func concatArrays<T>(x: [T], y: [T]) : [T] {
-        let buffer = Buffer.Buffer<T>(x.size() + y.size());
-        appendArrayToBuffer(buffer, x);
-        appendArrayToBuffer(buffer, y);
-        buffer.toArray();
-    };
-
     public func appendArrayToBuffer<T>(buffer: Buffer.Buffer<T>, array: [T]) {
         Iter.iterate(Iter.fromArray(array), func(x : T, ix : Nat) { buffer.add(x) });
     };
