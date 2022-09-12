@@ -8,6 +8,7 @@ import Result "mo:base/Result";
 import Array "mo:base/Array";
 import Nat8 "mo:base/Nat8";
 import Char "mo:base/Char";
+import Iter "mo:base/Iter";
 import Util "../src/Util";
 import FloatX "mo:xtendedNumbers/FloatX";
 
@@ -99,7 +100,7 @@ module {
         // Major Type 6
         test([0xc0, 0x74, 0x32, 0x30, 0x31, 0x33, 0x2d, 0x30, 0x33, 0x2d, 0x32, 0x31, 0x54, 0x32, 0x30, 0x3a, 0x30, 0x34, 0x3a, 0x30, 0x30, 0x5a], #majorType6({tag=0; value=#majorType3("2013-03-21T20:04:00Z")}), null);
         test([0xc1, 0x1a, 0x51, 0x4b, 0x67, 0xb0], #majorType6({tag=1; value=#majorType0(1363896240)}), null);
-        test([0xc1, 0xfb, 0x41, 0xd4, 0x52, 0xd9, 0xec, 0x20, 0x00, 0x00], #majorType6({tag=1; value=#majorType7(#float(FloatX.floatToFloatX(1363896240.5, #f64)))}), null);
+        test([0xc1, 0xfb, 0x41, 0xd4, 0x52, 0xd9, 0xec, 0x20, 0x00, 0x00], #majorType6({tag=1; value=#majorType7(#float(FloatX.fromFloat(1363896240.5, #f64)))}), null);
         test([0xd7, 0x44, 0x01, 0x02, 0x03, 0x04], #majorType6({tag=23; value=#majorType2([0x01, 0x02, 0x03, 0x04])}), null);
         test([0xd8, 0x18, 0x45, 0x64, 0x49, 0x45, 0x54, 0x46], #majorType6({tag=24; value=#majorType2([0x64, 0x49, 0x45, 0x54, 0x46])}), null);
         test([0xd8, 0x20, 0x76, 0x68, 0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f, 0x77, 0x77, 0x77, 0x2e, 0x65, 0x78, 0x61, 0x6d, 0x70, 0x6c, 0x65, 0x2e, 0x63, 0x6f, 0x6d], #majorType6({tag=32; value=#majorType3("http://www.example.com")}), null);
@@ -121,7 +122,7 @@ module {
     };
 
     func test(bytes: [Nat8], expected : Value.Value, reverseValue: ?[Nat8]) {
-        let decodeResult = Decoder.decodeBytes(bytes);
+        let decodeResult = Decoder.decode(Iter.fromArray(bytes));
         let actual: Value.Value = trapOrReturn<Value.Value, Errors.DecodingError>(decodeResult, func (e) { debug_show(e) });
         if(actual != expected){
             Debug.trap("Invalid value.\nExpected: " # debug_show(expected) # "\nActual: " # debug_show(actual) # "\nBytes: " # toHexString(bytes));

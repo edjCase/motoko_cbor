@@ -271,7 +271,7 @@ module {
       let value = switch(readBytes(byteLength)){
         case (null) return #err(#unexpectedEndOfBytes);
         case (?v) {
-          switch(FloatX.decodeFloatX(Iter.fromArray(v), precision, #msb)){
+          switch(FloatX.decode(Iter.fromArray(v), precision, #msb)){
             case (null) return #err(#invalid("Invalid float value"));
             case (?v) v;
           }

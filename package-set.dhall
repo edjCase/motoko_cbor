@@ -8,13 +8,13 @@ let
     [
       {
          name = "candid"
-         , version = "v1.0.0"
+         , version = "v0.0.1"
          , repo = "https://github.com/gekctek/motoko_candid"
          , dependencies = [] : List Text
       },
       {
          name = "xtendedNumbers"
-         , version = "v1.0.0"
+         , version = "v0.0.5"
          , repo = "https://github.com/gekctek/motoko_numbers"
          , dependencies = [] : List Text
       }

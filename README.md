@@ -102,12 +102,7 @@ https://github.com/dfinity/vessel
 
 ## Building
 
-To build, run the `./build.sh` file.
-It uses the entry point of
-
-## Running
-
-The only
+To build, run the `./build.sh` file. It will output wasm files to the `./build` directory
 
 ## Testing
 

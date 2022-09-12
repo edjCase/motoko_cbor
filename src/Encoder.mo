@@ -149,7 +149,7 @@ module {
       };
       case (#float(f)) {
         let floatBytesBuffer = Buffer.Buffer<Nat8>(8);
-        FloatX.encodeFloatX(floatBytesBuffer, f, #msb);
+        FloatX.encode(floatBytesBuffer, f, #msb);
         let n: Nat8 = switch (f.precision) {
           case (#f16) 25;
           case (#f32) 26;
