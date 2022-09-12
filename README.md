@@ -70,13 +70,9 @@ use `from_candid(...)`. See https://internetcomputer.org/docs/current/developer-
 
 ## Decoder.mo
 
-`decodeBlob(blob: Blob) : Result.Result<Value.Value, Errors.DecodingError>`
+`decode(blob: Blob) : Result.Result<Value.Value, Errors.DecodingError>`
 
 Decodes a blob into a cbor value variant
-
-`decode(bytes: Iter.Iter<Nat8>) : Result.Result<Value.Value, Errors.DecodingError>`
-
-Decodes a iterable Nat8 into a cbor value
 
 ## Encoder.mo
 
