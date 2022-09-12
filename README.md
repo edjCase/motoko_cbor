@@ -1,3 +1,7 @@
+# Overview
+
+This is a library that is written in Motoko that enables the encoding and decoding of CBOR between bytes and a CBOR variant type
+
 # Package
 
 ### Vessel
