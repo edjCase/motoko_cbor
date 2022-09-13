@@ -122,7 +122,7 @@ module {
     };
 
     func test(bytes: [Nat8], expected : Value.Value, reverseValue: ?[Nat8]) {
-        let decodeResult = Decoder.decode(Iter.fromArray(bytes));
+        let decodeResult = Decoder.decode(Blob.fromArray(bytes));
         let actual: Value.Value = trapOrReturn<Value.Value, Errors.DecodingError>(decodeResult, func (e) { debug_show(e) });
         if(actual != expected){
             Debug.trap("Invalid value.\nExpected: " # debug_show(expected) # "\nActual: " # debug_show(actual) # "\nBytes: " # toHexString(bytes));

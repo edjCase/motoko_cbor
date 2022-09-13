@@ -19,7 +19,8 @@ import Value "./Value";
 module {
 
   public func decode(blob: Blob) : Result.Result<Value.Value, Errors.DecodingError> {
-    decode(blob.vals());
+    let decoder = CborDecoder(blob.vals());
+    decoder.decode()
   };
 
   private class CborDecoder(bytes: Iter.Iter<Nat8>) {
