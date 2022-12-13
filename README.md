@@ -14,6 +14,14 @@ This is a library that is written in Motoko that enables the encoding and decodi
 
 # Package
 
+### MOPS
+
+```
+mops install cbor
+```
+
+To setup MOPS package manage, follow the instructions from the [MOPS Site](https://j4mwm-bqaaa-aaaam-qajbq-cai.ic0.app/)
+
 ### Vessel
 
 Currently there is no official package but there is a manual process:
