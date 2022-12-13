@@ -1,9 +1,9 @@
 [dependencies]
 base = "https://github.com/dfinity/motoko-base#494824a2787aee24ab4a5888aa519deb05ecfd60"
-xtendedNumbers = "https://github.com/gekctek/motoko_numbers#v1.0.0"
+xtendedNumbers = "https://github.com/edjcase/motoko_numbers#v1.0.0"
 
 [package]
 name = "cbor"
-version = "0.1.0"
+version = "0.1.1"
 description = "A CBOR library for encoding and decoding CBOR bytes"
-repository = "https://github.com/gekctek/motoko_cbor"
+repository = "https://github.com/edjcase/motoko_cbor"
