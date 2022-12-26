@@ -104,7 +104,7 @@ Encodes a cbor value into the supplied byte buffer
 
 # FloatX: Half(16), Single(32), Double(64)
 
-Due to the lack of float functionality (`float <-> bytes`, `half`, `single`) and external reference was used for these. `xtendedNumbers` in vessel or `github.com/gekctek/motoko_numbers`
+Due to the lack of float functionality (`float <-> bytes`, `half`, `single`) and external reference was used for these. `xtended-numbers` in vessel or `github.com/gekctek/motoko_numbers`
 
 # Library Devlopment:
 

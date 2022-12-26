@@ -1,4 +1,4 @@
-import FloatX "mo:xtendedNumbers/FloatX";
+import FloatX "mo:xtended-numbers/FloatX";
 
 module {
   public type DecodingError = {

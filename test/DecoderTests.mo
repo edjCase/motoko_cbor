@@ -10,7 +10,7 @@ import Nat8 "mo:base/Nat8";
 import Char "mo:base/Char";
 import Iter "mo:base/Iter";
 import Util "../src/Util";
-import FloatX "mo:xtendedNumbers/FloatX";
+import FloatX "mo:xtended-numbers/FloatX";
 
 
 module {

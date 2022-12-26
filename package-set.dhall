@@ -7,7 +7,7 @@ let
   additions =
     [
       {
-         name = "xtendedNumbers"
+         name = "xtended-numbers"
          , version = "v1.0.0"
          , repo = "https://github.com/edjcase/motoko_numbers"
          , dependencies = [] : List Text

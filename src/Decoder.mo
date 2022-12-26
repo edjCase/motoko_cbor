@@ -1,5 +1,5 @@
-import NatX "mo:xtendedNumbers/NatX";
-import FloatX "mo:xtendedNumbers/FloatX";
+import NatX "mo:xtended-numbers/NatX";
+import FloatX "mo:xtended-numbers/FloatX";
 import Blob "mo:base/Blob";
 import Buffer "mo:base/Buffer";
 import Debug "mo:base/Debug";
