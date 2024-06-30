@@ -2,24 +2,43 @@ import NatX "mo:xtended-numbers/NatX";
 import FloatX "mo:xtended-numbers/FloatX";
 import Blob "mo:base/Blob";
 import Buffer "mo:base/Buffer";
-import Debug "mo:base/Debug";
 import Int "mo:base/Int";
 import Int64 "mo:base/Int64";
-import Int8 "mo:base/Int8";
 import Iter "mo:base/Iter";
 import Nat "mo:base/Nat";
 import Nat64 "mo:base/Nat64";
 import Nat8 "mo:base/Nat8";
 import Result "mo:base/Result";
 import Text "mo:base/Text";
-import Errors "./Errors";
 import Util "./Util";
-import Value "./Value";
+import Types "./Types";
 
 module {
 
-  public func decode(blob : Blob) : Result.Result<Value.Value, Errors.DecodingError> {
-    let decoder = CborDecoder(blob.vals());
+  /// Decodes a blob into a cbor value variant
+  ///
+  /// ```motoko
+  /// let bytes: Blob = ...;
+  /// let cbor: Types.Value = switch(Decoder.decode(bytes)) {
+  ///     case (#err(e)) ...;
+  ///     case (#ok(c)) c;
+  /// };
+  /// ```
+  public func decode(blob : Blob) : Result.Result<Types.Value, Types.DecodingError> {
+    decodeBytes(blob.vals());
+  };
+
+  /// Decodes a series of bytes into a cbor value variant
+  ///
+  /// ```motoko
+  /// let bytes: [Nat8] = [0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff];
+  /// let cbor: Types.Value = switch(Decoder.decodeBytes(bytes)) {
+  ///     case (#err(e)) ...;
+  ///     case (#ok(c)) c;
+  /// };
+  /// ```
+  public func decodeBytes(bytes : Iter.Iter<Nat8>) : Result.Result<Types.Value, Types.DecodingError> {
+    let decoder = CborDecoder(bytes);
     decoder.decode();
   };
 
@@ -27,11 +46,11 @@ module {
     var byte_position : Nat = 0;
     let iterator : Iter.Iter<Nat8> = bytes;
 
-    public func decode() : Result.Result<Value.Value, Errors.DecodingError> {
+    public func decode() : Result.Result<Types.Value, Types.DecodingError> {
       decodeInternal(false);
     };
 
-    private func decodeInternal(allowBreak : Bool) : Result.Result<Value.Value, Errors.DecodingError> {
+    private func decodeInternal(allowBreak : Bool) : Result.Result<Types.Value, Types.DecodingError> {
       let firstByte : Nat8 = switch (readByte()) {
         case (null) {
           return #err(#unexpectedEndOfBytes);
@@ -59,7 +78,7 @@ module {
       result;
     };
 
-    private func parseMajorType0(additionalBits : Nat8) : Result.Result<Value.Value, Errors.DecodingError> {
+    private func parseMajorType0(additionalBits : Nat8) : Result.Result<Types.Value, Types.DecodingError> {
       let value = switch (getAdditionalBitsValue(additionalBits)) {
         case (#ok(#num(n))) Nat64.fromNat(Nat8.toNat(n)); // Convert number to value
         case (#ok(#bytes(b))) {
@@ -74,7 +93,7 @@ module {
       #ok(#majorType0(value));
     };
 
-    private func parseMajorType1(additionalBits : Nat8) : Result.Result<Value.Value, Errors.DecodingError> {
+    private func parseMajorType1(additionalBits : Nat8) : Result.Result<Types.Value, Types.DecodingError> {
       let value : Nat64 = switch (getAdditionalBitsValue(additionalBits)) {
         case (#ok(#num(n))) Nat64.fromNat(Nat8.toNat(n)); // Convert number to value
         case (#ok(#bytes(b))) {
@@ -115,7 +134,7 @@ module {
       -1 - intValue; // Real value is (-1 - value)
     };
 
-    private func parseMajorType2(additionalBits : Nat8) : Result.Result<Value.Value, Errors.DecodingError> {
+    private func parseMajorType2(additionalBits : Nat8) : Result.Result<Types.Value, Types.DecodingError> {
       let byte_value = switch (getAdditionalBitsByteValue(additionalBits, 2)) {
         case (#err(e)) return #err(e);
         case (#ok(v)) v;
@@ -123,7 +142,7 @@ module {
       #ok(#majorType2(byte_value));
     };
 
-    private func parseMajorType3(additionalBits : Nat8) : Result.Result<Value.Value, Errors.DecodingError> {
+    private func parseMajorType3(additionalBits : Nat8) : Result.Result<Types.Value, Types.DecodingError> {
       let byte_value = switch (getAdditionalBitsByteValue(additionalBits, 3)) {
         case (#err(e)) return #err(e);
         case (#ok(v)) v;
@@ -136,7 +155,7 @@ module {
       #ok(#majorType3(text_value));
     };
 
-    private func parseMajorType4(additionalBits : Nat8) : Result.Result<Value.Value, Errors.DecodingError> {
+    private func parseMajorType4(additionalBits : Nat8) : Result.Result<Types.Value, Types.DecodingError> {
       let array_length : Nat64 = switch (getAdditionalBitsValue(additionalBits)) {
         case (#ok(#num(n))) Nat64.fromNat(Nat8.toNat(n)); // Convert number to value
         case (#ok(#bytes(b))) {
@@ -147,9 +166,9 @@ module {
         };
         case (#ok(#indef)) {
           // Loop indefinitely for each array item
-          let buffer = Buffer.Buffer<Value.Value>(1);
+          let buffer = Buffer.Buffer<Types.Value>(1);
           label l loop {
-            let cbor_value : Value.Value = switch (decodeInternal(true)) {
+            let cbor_value : Types.Value = switch (decodeInternal(true)) {
               case (#err(e)) return #err(e);
               case (#ok(#majorType7(#_break))) break l;
               case (#ok(v)) v;
@@ -160,9 +179,9 @@ module {
         };
         case (#err(x)) return #err(x);
       };
-      let buffer = Buffer.Buffer<Value.Value>(Nat64.toNat(array_length));
+      let buffer = Buffer.Buffer<Types.Value>(Nat64.toNat(array_length));
       for (i in Iter.range(1, Nat64.toNat(array_length))) {
-        let cbor_value : Value.Value = switch (decodeInternal(false)) {
+        let cbor_value : Types.Value = switch (decodeInternal(false)) {
           case (#err(e)) return #err(e);
           case (#ok(v)) v;
         };
@@ -171,7 +190,7 @@ module {
       #ok(#majorType4(Buffer.toArray(buffer)));
     };
 
-    private func parseMajorType5(additionalBits : Nat8) : Result.Result<Value.Value, Errors.DecodingError> {
+    private func parseMajorType5(additionalBits : Nat8) : Result.Result<Types.Value, Types.DecodingError> {
       let map_size : Nat64 = switch (getAdditionalBitsValue(additionalBits)) {
         case (#ok(#num(n))) Nat64.fromNat(Nat8.toNat(n)); // Convert number to value
         case (#ok(#bytes(b))) {
@@ -182,7 +201,7 @@ module {
         };
         case (#ok(#indef)) {
           // Loop indefinitely for each array item
-          let buffer = Buffer.Buffer<(Value.Value, Value.Value)>(1);
+          let buffer = Buffer.Buffer<(Types.Value, Types.Value)>(1);
           label l loop {
             let (key, value) = switch (decodeKeyValuePair()) {
               case (#err(#unexpectedBreak)) break l;
@@ -195,7 +214,7 @@ module {
         };
         case (#err(x)) return #err(x);
       };
-      let buffer = Buffer.Buffer<(Value.Value, Value.Value)>(Nat64.toNat(map_size));
+      let buffer = Buffer.Buffer<(Types.Value, Types.Value)>(Nat64.toNat(map_size));
       for (i in Iter.range(1, Nat64.toNat(map_size))) {
         let (key, value) = switch (decodeKeyValuePair()) {
           case (#err(e)) return #err(e);
@@ -206,7 +225,7 @@ module {
       #ok(#majorType5(Buffer.toArray(buffer)));
     };
 
-    private func parseMajorType6(additionalBits : Nat8) : Result.Result<Value.Value, Errors.DecodingError> {
+    private func parseMajorType6(additionalBits : Nat8) : Result.Result<Types.Value, Types.DecodingError> {
       let tag : Nat64 = switch (getAdditionalBitsValue(additionalBits)) {
         case (#ok(#num(n))) Nat64.fromNat(Nat8.toNat(n)); // Convert number to value
         case (#ok(#bytes(b))) {
@@ -218,14 +237,14 @@ module {
         case (#ok(#indef)) return #err(#invalid("Value 31 is not allowed for additional bits for major type 6"));
         case (#err(x)) return #err(x);
       };
-      let value : Value.Value = switch (decodeInternal(false)) {
+      let value : Types.Value = switch (decodeInternal(false)) {
         case (#err(e)) return #err(e);
         case (#ok(v)) v;
       };
       #ok(#majorType6({ tag = tag; value = value }));
     };
 
-    private func parseMajorType7(additionalBits : Nat8) : Result.Result<Value.Value, Errors.DecodingError> {
+    private func parseMajorType7(additionalBits : Nat8) : Result.Result<Types.Value, Types.DecodingError> {
       if (additionalBits == 0xff) {
         // ff -> break code
         return #ok(#majorType7(#_break));
@@ -256,9 +275,9 @@ module {
       };
       // If 25..27, then the value is a float (half, single, double)
       let (byteLength, precision) = switch (additionalBits) {
-        case (25)(2, #f16); // Half, 16 bit
-        case (26)(4, #f32); // Single, 32 bit
-        case (27)(8, #f64); // Double, 64 bit
+        case (25) (2, #f16); // Half, 16 bit
+        case (26) (4, #f32); // Single, 32 bit
+        case (27) (8, #f64); // Double, 64 bit
         case (31) return #ok(#majorType7(#_break));
         case (b) return #err(#invalid("Invalid additional bits value: " # Nat8.toText(b)));
       };
@@ -301,7 +320,7 @@ module {
       return ?Buffer.toArray(buffer);
     };
 
-    private func readIndefBytes(chunkedMajorType : ?Nat8) : Result.Result<[Nat8], Errors.DecodingError> {
+    private func readIndefBytes(chunkedMajorType : ?Nat8) : Result.Result<[Nat8], Types.DecodingError> {
       let buffer = Buffer.Buffer<Nat8>(1);
       label l loop {
         let byte = switch (readByte()) {
@@ -331,19 +350,19 @@ module {
       return #ok(Buffer.toArray(buffer));
     };
 
-    private func decodeKeyValuePair() : Result.Result<(Value.Value, Value.Value), Errors.DecodingError> {
-      let key : Value.Value = switch (decodeInternal(false)) {
+    private func decodeKeyValuePair() : Result.Result<(Types.Value, Types.Value), Types.DecodingError> {
+      let key : Types.Value = switch (decodeInternal(false)) {
         case (#err(e)) return #err(e);
         case (#ok(v)) v;
       };
-      let value : Value.Value = switch (decodeInternal(false)) {
+      let value : Types.Value = switch (decodeInternal(false)) {
         case (#err(e)) return #err(e);
         case (#ok(v)) v;
       };
       #ok((key, value));
     };
 
-    private func decodeAdditionalBytes(bytes : [Nat8]) : Result.Result<Nat64, Errors.DecodingError> {
+    private func decodeAdditionalBytes(bytes : [Nat8]) : Result.Result<Nat64, Types.DecodingError> {
       let iter = Iter.fromArray(bytes);
       // Convert bytes to value
       let result : ?Nat64 = switch (bytes.size()) {
@@ -359,7 +378,7 @@ module {
       };
     };
 
-    private func getAdditionalBitsByteValue(additionalBits : Nat8, majorType : Nat8) : Result.Result<[Nat8], Errors.DecodingError> {
+    private func getAdditionalBitsByteValue(additionalBits : Nat8, majorType : Nat8) : Result.Result<[Nat8], Types.DecodingError> {
       let bytes_to_read : Nat = switch (getAdditionalBitsValue(additionalBits)) {
         case (#ok(#num(n))) Nat8.toNat(n); // Convert number to length
         case (#ok(#bytes(b))) {
@@ -386,7 +405,7 @@ module {
       #ok(bytes);
     };
 
-    private func getAdditionalBitsValue(additionalBits : Nat8) : Result.Result<{ #num : Nat8; #bytes : [Nat8]; #indef }, Errors.DecodingError> {
+    private func getAdditionalBitsValue(additionalBits : Nat8) : Result.Result<{ #num : Nat8; #bytes : [Nat8]; #indef }, Types.DecodingError> {
       // Check additional bits for value
       // 23 or less => additional bits is the value
       // 24 => read 1 more byte for value
