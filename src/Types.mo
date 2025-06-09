@@ -24,11 +24,12 @@ module {
 
   public type DecodingError = {
     #unexpectedEndOfBytes;
-    #unexpectedBreak;
     #invalid : Text;
+    #unexpectedBreak;
   };
 
   public type EncodingError = {
     #invalidValue : Text;
   };
+
 };

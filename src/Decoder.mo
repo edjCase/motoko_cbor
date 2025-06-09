@@ -15,29 +15,16 @@ import Types "./Types";
 
 module {
 
-  /// Decodes a blob into a cbor value variant
+  /// Decodes a series of bytes into a cbor value variant
   ///
   /// ```motoko
-  /// let bytes: Blob = ...;
+  /// let bytes: [Nat8] = [0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff];
   /// let cbor: Types.Value = switch(Decoder.decode(bytes)) {
   ///     case (#err(e)) ...;
   ///     case (#ok(c)) c;
   /// };
   /// ```
-  public func decode(blob : Blob) : Result.Result<Types.Value, Types.DecodingError> {
-    decodeBytes(blob.vals());
-  };
-
-  /// Decodes a series of bytes into a cbor value variant
-  ///
-  /// ```motoko
-  /// let bytes: [Nat8] = [0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff];
-  /// let cbor: Types.Value = switch(Decoder.decodeBytes(bytes)) {
-  ///     case (#err(e)) ...;
-  ///     case (#ok(c)) c;
-  /// };
-  /// ```
-  public func decodeBytes(bytes : Iter.Iter<Nat8>) : Result.Result<Types.Value, Types.DecodingError> {
+  public func decode(bytes : Iter.Iter<Nat8>) : Result.Result<Types.Value, Types.DecodingError> {
     let decoder = CborDecoder(bytes);
     decoder.decode();
   };
@@ -422,7 +409,7 @@ module {
         case (26) 4;
         case (27) 8;
         case (31) return #ok(#indef);
-        case a {
+        case (_) {
           let message = "Invalid additional bits value: " # Nat8.toText(additionalBits);
           return #err(#invalid(message));
         };

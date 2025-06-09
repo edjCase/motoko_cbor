@@ -27,11 +27,10 @@ To setup MOPS package manage, follow the instructions from the [MOPS Site](https
 ### Cbor Bytes -> Cbor Object
 
 ```
-import Types "mo:cbor/Types";
-import Decoder "mo:cbor/Decoder";
+import Cbor "mo:cbor";
 
 let bytes: [Nat8] = [0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff];
-let cbor: Types.Value = switch(Decoder.decodeBytes(bytes)) {
+let cbor: Cbor.Value = switch(Cbor.decode(bytes.vals())) {
     case (#err(e)) ...;
     case (#ok(c)) c;
 };
@@ -40,14 +39,13 @@ let cbor: Types.Value = switch(Decoder.decodeBytes(bytes)) {
 ### Cbor Object -> Cbor Bytes
 
 ```
-import Types "mo:cbor/Types";
-import Encoder "mo:cbor/Encoder";
+import Cbor "mo:cbor";
 
-let bytes: Types.Value = #majorType5([
+let bytes: Cbor.Value = #majorType5([
     (#majorType3("Fun"), #majorType7(#bool(true))),
     (#majorType3("Amt"), #majorType1(-2))
 ]);
-let bytes: [Nat8] = switch(Encoder.encode(bytes)) {
+let bytes: [Nat8] = switch(Cbor.encode(bytes)) {
     case (#err(e)) ...;
     case (#ok(c)) c;
 };
@@ -66,17 +64,9 @@ use `from_candid(...)`. See https://internetcomputer.org/docs/current/developer-
 
 # API
 
-## Decoder.mo
-
-`decode(blob: Blob) : Result.Result<Types.Value, Types.DecodingError>`
-
-Decodes a blob into a cbor value variant
-
-`decodeBytes(bytes: Iter.Iter<Nat8>) : Result.Result<Types.Value, Types.DecodingError>`
+`decode(bytes: Iter.Iter<Nat8>) : Result.Result<Types.Value, Types.DecodingError>`
 
 Decodes a series of bytes into a cbor value variant
-
-## Encoder.mo
 
 `encode(value: Types.Value) : Result.Result<[Nat8], Types.EncodingError>`
 
@@ -85,10 +75,6 @@ Encodes a cbor value into a byte array
 `encodeToBuffer(buffer: Buffer.Buffer<Nat8>, value: Types.Value) : Result.Result<(), Types.EncodingError>`
 
 Encodes a cbor value into the supplied byte buffer
-
-# FloatX: Half(16), Single(32), Double(64)
-
-Due to the lack of float functionality (`float <-> bytes`, `half`, `single`) and external reference was used for these. `xtended-numbers` in vessel or `github.com/gekctek/motoko_numbers`
 
 # Testing
 
