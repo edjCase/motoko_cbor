@@ -13,18 +13,62 @@ import Text "mo:base/Text";
 import Util "./Util";
 import Types "./Types";
 
+/// CBOR (Concise Binary Object Representation) decoder for Motoko.
+///
+/// This module provides functionality for decoding CBOR binary data to Motoko values
+/// according to RFC 7049. CBOR is a binary data serialization format that aims to be
+/// small, fast, and structured.
+///
+/// Key features:
+/// * Convert CBOR binary data to Motoko values
+/// * Support for all major CBOR types (integers, text, arrays, maps, tags, floats, simple values)
+/// * Streaming decoding with iterator-based input
+/// * Comprehensive error handling and validation
+/// * Support for indefinite-length items
+///
+/// Example usage:
+/// ```motoko
+/// import CBOR "mo:cbor";
+/// import Result "mo:base/Result";
+///
+/// // Decode CBOR bytes to a value
+/// let bytes: [Nat8] = [0x18, 0x2a]; // CBOR encoding of integer 42
+/// let result = CBOR.fromBytes(bytes.vals());
+/// switch (result) {
+///   case (#ok(value)) { /* Use decoded value */ };
+///   case (#err(error)) { /* Handle decoding error */ };
+/// };
+/// ```
+///
+/// Security considerations:
+/// * CBOR data from untrusted sources should be validated
+/// * Be aware of potential memory usage with large arrays/maps
+/// * Consider limits on recursion depth for deeply nested structures
 module {
 
-  /// Decodes a series of bytes into a cbor value variant
+  /// Decodes a series of bytes into a CBOR value.
+  /// This is the main decoding function that converts CBOR binary data to a structured value.
   ///
+  /// The function accepts an iterator of bytes, which allows for efficient streaming
+  /// decoding of large data sets. The decoder handles all CBOR major types and validates
+  /// the input data according to the CBOR specification.
+  ///
+  /// Parameters:
+  /// * `bytes`: An iterator over the CBOR-encoded bytes to decode
+  ///
+  /// Returns:
+  /// * `#ok(Types.Value)`: Successfully decoded CBOR value
+  /// * `#err(Types.DecodingError)`: Decoding failed with error details
+  ///
+  /// Example:
   /// ```motoko
   /// let bytes: [Nat8] = [0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff];
-  /// let cbor: Types.Value = switch(Decoder.decode(bytes)) {
-  ///     case (#err(e)) ...;
+  /// let cbor: Types.Value = switch(fromBytes(bytes.vals())) {
+  ///     case (#err(e)) Debug.trap("Decoding failed: " # debug_show(e));
   ///     case (#ok(c)) c;
   /// };
   /// ```
-  public func decode(bytes : Iter.Iter<Nat8>) : Result.Result<Types.Value, Types.DecodingError> {
+  public func fromBytes(bytes : Iter.Iter<Nat8>) : Result.Result<Types.Value, Types.DecodingError> {
     let decoder = CborDecoder(bytes);
     decoder.decode();
   };

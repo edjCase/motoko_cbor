@@ -8,12 +8,12 @@ import FloatX "mo:xtended-numbers/FloatX";
 import { test } "mo:test";
 
 func testBytes(bytes : [Nat8], expected : Cbor.Value, reverseValue : ?[Nat8]) {
-    let decodeResult = Cbor.decode(bytes.vals());
+    let decodeResult = Cbor.fromBytes(bytes.vals());
     let actual : Cbor.Value = trapOrReturn<Cbor.Value, Cbor.DecodingError>(decodeResult, func(e) { debug_show (e) });
     if (actual != expected) {
         Debug.trap("Invalid value.\nExpected: " # debug_show (expected) # "\nActual: " # debug_show (actual) # "\nBytes: " # toHexString(bytes));
     };
-    let encodeResult = Cbor.encode(actual);
+    let encodeResult = Cbor.toBytes(actual);
     let actualBytes = trapOrReturn<[Nat8], Cbor.EncodingError>(encodeResult, func(e) { debug_show (e) });
     let comparisonValue : [Nat8] = switch (reverseValue) {
         case (null) bytes;

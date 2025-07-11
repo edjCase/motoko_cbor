@@ -30,7 +30,7 @@ To setup MOPS package manage, follow the instructions from the [MOPS Site](https
 import Cbor "mo:cbor";
 
 let bytes: [Nat8] = [0xbf, 0x63, 0x46, 0x75, 0x6e, 0xf5, 0x63, 0x41, 0x6d, 0x74, 0x21, 0xff];
-let cbor: Cbor.Value = switch(Cbor.decode(bytes.vals())) {
+let cbor: Cbor.Value = switch(Cbor.fromBytes(bytes.vals())) {
     case (#err(e)) ...;
     case (#ok(c)) c;
 };
@@ -45,7 +45,7 @@ let bytes: Cbor.Value = #majorType5([
     (#majorType3("Fun"), #majorType7(#bool(true))),
     (#majorType3("Amt"), #majorType1(-2))
 ]);
-let bytes: [Nat8] = switch(Cbor.encode(bytes)) {
+let bytes: [Nat8] = switch(Cbor.toBytes(bytes)) {
     case (#err(e)) ...;
     case (#ok(c)) c;
 };
@@ -64,17 +64,17 @@ use `from_candid(...)`. See https://internetcomputer.org/docs/current/developer-
 
 # API
 
-`decode(bytes: Iter.Iter<Nat8>) : Result.Result<Types.Value, Types.DecodingError>`
+`fromBytes(bytes: Iter.Iter<Nat8>) : Result.Result<Types.Value, Types.DecodingError>`
 
-Decodes a series of bytes into a cbor value variant
+Decodes a series of bytes into a CBOR value variant
 
-`encode(value: Types.Value) : Result.Result<[Nat8], Types.EncodingError>`
+`toBytes(value: Types.Value) : Result.Result<[Nat8], Types.EncodingError>`
 
-Encodes a cbor value into a byte array
+Encodes a CBOR value into a byte array
 
-`encodeToBuffer(buffer: Buffer.Buffer<Nat8>, value: Types.Value) : Result.Result<(), Types.EncodingError>`
+`toBytesBuffer(buffer: Buffer.Buffer<Nat8>, value: Types.Value) : Result.Result<Nat, Types.EncodingError>`
 
-Encodes a cbor value into the supplied byte buffer
+Encodes a CBOR value into the supplied byte buffer and returns the number of bytes written
 
 # Testing
 
